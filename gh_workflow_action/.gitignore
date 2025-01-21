@@ -1,0 +1,8 @@
+__pycache__
+tmp/
+*.yaml
+*.yml
+*.txt
+!requirements.txt
+venv/
+!action.yaml

@@ -1,0 +1,14 @@
+# action.yaml
+name: 'Custom GitHub Action'
+description: 'Github Action Scanner'
+inputs:
+  is_public:
+    description: 'Repository visibility status'
+    required: true
+  modified_workflows:
+    description: 'Enter modified_workflows files'
+    required: true  
+
+runs:
+  using: "docker"
+  image: "Dockerfile"
