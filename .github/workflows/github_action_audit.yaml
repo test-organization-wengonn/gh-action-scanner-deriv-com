@@ -1,0 +1,50 @@
+name: Github Action Audit
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  github_action_audit:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # this is needed for gh cli
+
+    steps:
+      # Checking if repo is public. If it's not, dependency review will be skipped.
+      - name: Check if repo is public
+        run: |
+          response=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" repos/${{ github.repository}} | jq -r '.visibility')
+          if [ "$response" == "public" ]; then
+            echo "Repository is Public."
+            echo 'is_public=true' >> $GITHUB_ENV
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      - name: Get modified filenames
+        id: pr-diff
+        run: |
+          modified_workflows="$(git diff --name-only HEAD^1 HEAD | grep -E '^\.github/workflows' | tr '\n' ',' | sed 's+,$++g')"
+          echo "modified_workflows=${modified_workflows}" >> $GITHUB_ENV
+          echo "pr_diff=${modified_workflows}" >> $GITHUB_OUTPUT
+
+      - name: github action scanner
+        if: ${{ steps.pr-diff.outputs.pr_diff != '' }}
+        uses: test-organization-wengonn/gh-action-scanner-deriv-com/gh_workflow_action@master
+        with:
+          is_public: ${{ env.is_public }}
+          modified_workflows: ${{ env.modified_workflows }}
+      
+      - name: Add Documentation Links to Summary
+        if: always()
+        run: |
+          echo "### Documentation Links" >> $GITHUB_STEP_SUMMARY
+          echo "* [Security Scanner Documentation](https://wikijs.deriv.cloud/en/Security/product-security/github-action-pr-scanner)" >> $GITHUB_STEP_SUMMARY
